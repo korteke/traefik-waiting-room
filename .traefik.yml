@@ -1,0 +1,8 @@
+displayName: Waiting Room
+type: middleware
+import: github.com/korteke/traefik-waiting-room
+summary: This pluging will let only predefined amount users to the origin service. If the amount is exceeded the users are redirected to the "waiting room".
+iconPath: .assests/icon.png
+testData:
+  Headers:
+    Foo: Bar

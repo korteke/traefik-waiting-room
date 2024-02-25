@@ -1,0 +1,50 @@
+# docker-compose.yml
+version: "3.6"
+
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    command:
+      - --log.level=DEBUG
+        #- --log.level=INFO
+      - --accesslog=true
+      #- --tracing=true
+      #- --tracing.serviceName=traefik
+      - --api
+      - --api.dashboard
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --experimental.localPlugins.waitingroom.moduleName=github.com/korteke/traefik-waiting-room
+    ports:
+      - "80:80"
+      - "8080:8080"
+    networks:
+      - traefik-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/plugins-local/src/github.com/korteke/traefik-waiting-room
+    labels:
+      - traefik.http.middlewares.waitingroom.plugin.waitingroom.enabled=True
+      - traefik.http.middlewares.waitingroom.plugin.waitingroom.waitRoomFile=/plugins-local/src/github.com/korteke/traefik-waiting-room/waiting-room.html
+  whoami:
+    image: traefik/whoami
+    container_name: whoami-service
+    depends_on:
+      - traefik
+    networks:
+      - traefik-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`whoami.local`)
+      - traefik.http.routers.whoami.entrypoints=web
+      - traefik.http.routers.myrouter.service=whoami-service
+      - traefik.http.services.whoami-service.loadBalancer.sticky.cookie=true
+      - traefik.http.services.whoami-service.loadBalancer.sticky.cookie.name=X-Trf-Id
+      - traefik.http.services.whoami-service.loadbalancer.server.port=80
+      - traefik.http.routers.whoami.middlewares=waitingroom
+networks:
+  traefik-network:
+    driver: bridge
+
